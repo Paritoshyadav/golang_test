@@ -30,6 +30,24 @@ func TestConcurrency(t *testing.T) {
 }
 
 func mockWebsiteChecker(url string) bool {
-	time.Sleep(2 * time.Second)
 	return url != "waat://furhurterwe.geds"
+}
+
+func BenchmarkWebsiteChecker(b *testing.B) {
+	urls := []string{"a url"}
+	// for i := 0; i < len(urls); i++ {
+
+	// 	urls = append(urls, "a url")
+
+	// }
+
+	for i := 0; i < b.N; i++ {
+		checkwebsite(slowWebsiteChecker, urls)
+	}
+
+}
+
+func slowWebsiteChecker(_ string) bool {
+	time.Sleep(20 * time.Millisecond)
+	return true
 }
