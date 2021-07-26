@@ -6,26 +6,43 @@ import (
 	"time"
 )
 
-func race(site, site_two string) string {
+func race(site, site_two string) (string, error) {
 
-	start_site := time.Now()
-	http.Get(site)
-	finish_site := time.Since(start_site)
+	return configrace(site, site_two, 10*time.Second)
 
-	start_site_two := time.Now()
-	http.Get(site_two)
-	finish_site_two := time.Since(start_site_two)
+}
 
-	if finish_site_two > finish_site {
-		return site
+func configrace(site, site_two string, duration time.Duration) (string, error) {
+
+	select {
+
+	case <-ping(site):
+		return site, nil
+
+	case <-ping(site_two):
+		return site_two, nil
+
+	case <-time.After(duration):
+		return "", fmt.Errorf("time out")
+
 	}
-	return site_two
 
+}
+
+func ping(url string) chan struct{} {
+	ch := make(chan struct{})
+	go func() {
+
+		http.Get(url)
+		close(ch)
+
+	}()
+	return ch
 }
 
 func main() {
 
-	result := race("www.google.com", "www.facebook.com")
+	result, _ := race("www.google.com", "www.facebook.com")
 	fmt.Println(result)
 
 }
