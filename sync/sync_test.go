@@ -1,23 +1,36 @@
 package main
 
-import "testing"
+import (
+	"sync"
+	"testing"
+)
 
 func TestSync(t *testing.T) {
 
-	val := MyCounter{1}
+	val := MyCounter{}
 
-	for i := 1; i < 10; i++ {
+	var wg sync.WaitGroup
 
-		val.add()
+	counter := 1000
+
+	wg.Add(counter)
+
+	for i := 0; i < counter; i++ {
+
+		go func() {
+			val.add()
+			wg.Done()
+
+		}()
 
 	}
+
+	wg.Wait()
 	got := val.value()
 
-	want := 10
+	if got != counter {
 
-	if got != want {
-
-		t.Errorf("got %d and want %d", got, want)
+		t.Errorf("got %d and want %d", got, counter)
 
 	}
 
