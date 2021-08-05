@@ -7,12 +7,27 @@ import (
 
 type Store interface {
 	Fetch() string
+	Cancel()
 }
 
 func Server(store Store) http.HandlerFunc {
 
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(rw, store.Fetch())
+
+		ctx := r.Context()
+		data := make(chan string, 1)
+		go func() {
+			data <- store.Fetch()
+
+		}()
+
+		select {
+		case d := <-data:
+			fmt.Fprint(rw, d)
+		case <-ctx.Done():
+			store.Cancel()
+		}
+
 	}
 
 }
