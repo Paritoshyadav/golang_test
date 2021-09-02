@@ -92,8 +92,6 @@ func TestSvgWriter(t *testing.T) {
 
 	xml.Unmarshal(c.Bytes(), &svg)
 	want := Line{150, 150, 150, 60}
-	x2 := "150.000"
-	y2 := "60.000"
 
 	for _, line := range svg.Line {
 		if line == want {
@@ -101,7 +99,7 @@ func TestSvgWriter(t *testing.T) {
 		}
 	}
 
-	t.Errorf("Expected to find the second hand with x2 of %+v and y2 of %+v, in the SVG output %v", x2, y2, svg.Line)
+	t.Errorf("Expected to find the second hand with  %+v , in the SVG output %v", want, svg.Line)
 
 }
 func TestSecondHandAt30Seconds(t *testing.T) {

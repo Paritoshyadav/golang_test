@@ -1,5 +1,7 @@
 package main
 
+// This code is only for single hand (i.e for second hand), process is alomost  similar for other clock hands i.e minute and hour hand
+
 import (
 	"fmt"
 	"io"
