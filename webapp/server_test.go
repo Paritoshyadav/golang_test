@@ -9,12 +9,18 @@ import (
 )
 
 type StubPlayerSore struct {
-	score map[string]int
+	score    map[string]int
+	winCalls []string
 }
 
 func (s *StubPlayerSore) GetPlayerScore(name string) int {
 
 	return s.score[name]
+
+}
+func (s *StubPlayerSore) RecordWins(name string) {
+
+	s.winCalls = append(s.winCalls, name)
 
 }
 
@@ -23,7 +29,7 @@ func TestListenAndServe(t *testing.T) {
 	playerServer := &PlayerServer{&StubPlayerSore{map[string]int{
 		"Pepper": 20,
 		"Sam":    10,
-	}}}
+	}, nil}}
 
 	t.Run("return Pepper score", func(t *testing.T) {
 		request := NewRequest("Pepper")
@@ -68,9 +74,11 @@ func TestListenAndServe(t *testing.T) {
 }
 
 func TestStoreWins(t *testing.T) {
-	playerServer := &PlayerServer{&StubPlayerSore{map[string]int{}}}
+	const playerName = "Sam"
+	store := &StubPlayerSore{map[string]int{}, nil}
+	playerServer := &PlayerServer{store}
 	t.Run("accepting Post request", func(t *testing.T) {
-		request, _ := http.NewRequest(http.MethodPost, "/players/m", nil)
+		request := NewPostWinRequest(playerName)
 		response := httptest.NewRecorder()
 
 		playerServer.ServeHTTP(response, request)
@@ -82,7 +90,42 @@ func TestStoreWins(t *testing.T) {
 
 		assertResponseStatus(t, got, want)
 
+		if len(store.winCalls) != 1 {
+			t.Errorf("got %d but want %d", len(store.winCalls), 1)
+
+		}
+		if store.winCalls[0] != playerName {
+			t.Errorf("got %s but want %s", store.winCalls[0], playerName)
+
+		}
+
 	})
+
+}
+
+func TestAndRecordWinAndScore(t *testing.T) {
+
+	store := NewInMemoryPlayerStore()
+	server := PlayerServer{store}
+	player := "Pepper"
+
+	server.ServeHTTP(httptest.NewRecorder(), NewRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), NewRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), NewRequest(player))
+
+	response := httptest.NewRecorder()
+
+	server.ServeHTTP(httptest.NewRecorder(), NewPostWinRequest(player))
+
+	assertResponseStatus(t, response.Code, http.StatusAccepted)
+	assertPlayerScore(t, response.Body.String(), "3")
+
+}
+
+func NewPostWinRequest(name string) *http.Request {
+
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/players/%s", name), nil)
+	return req
 
 }
 

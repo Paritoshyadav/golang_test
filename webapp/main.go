@@ -5,14 +5,24 @@ import (
 	"net/http"
 )
 
-type InMemoryPlayerStore struct{}
+func NewInMemoryPlayerStore() *InMemoryPlayerStore {
+	return &InMemoryPlayerStore{map[string]int{}}
+}
+
+type InMemoryPlayerStore struct {
+	store map[string]int
+}
+
+func (i *InMemoryPlayerStore) RecordWins(name string) {
+	i.store[name]++
+}
 
 func (i *InMemoryPlayerStore) GetPlayerScore(name string) int {
-	return 123
+	return i.store[name]
 }
 
 func main() {
-	server := PlayerServer{&InMemoryPlayerStore{}}
-	log.Fatal((http.ListenAndServe(":5000", &server)))
+	server := &PlayerServer{NewInMemoryPlayerStore()}
+	log.Fatal((http.ListenAndServe(":5000", server)))
 
 }
