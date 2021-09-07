@@ -109,16 +109,27 @@ func TestAndRecordWinAndScore(t *testing.T) {
 	server := PlayerServer{store}
 	player := "Pepper"
 
-	server.ServeHTTP(httptest.NewRecorder(), NewRequest(player))
-	server.ServeHTTP(httptest.NewRecorder(), NewRequest(player))
-	server.ServeHTTP(httptest.NewRecorder(), NewRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), NewPostWinRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), NewPostWinRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), NewPostWinRequest(player))
 
 	response := httptest.NewRecorder()
 
-	server.ServeHTTP(httptest.NewRecorder(), NewPostWinRequest(player))
+	server.ServeHTTP(response, NewRequest(player))
 
 	assertResponseStatus(t, response.Code, http.StatusAccepted)
-	assertPlayerScore(t, response.Body.String(), "3")
+	assertPlayerScore(t, strings.TrimSuffix(response.Body.String(), "\n"), "3")
+
+}
+
+func TestLeague(t *testing.T) {
+
+	store := &StubPlayerSore{}
+	server := &PlayerServer{store}
+	request, _ := http.NewRequest(http.MethodGet, "/league/", nil)
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, request)
+	assertResponseStatus(t, response.Code, http.StatusAccepted)
 
 }
 
