@@ -1,16 +1,20 @@
 package main
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
 	"reflect"
-	"strings"
 	"testing"
 )
 
 func TestFileSystemStore(t *testing.T) {
 	t.Run("Reading Db", func(t *testing.T) {
-		database := strings.NewReader(`[
+		database, closeFile := createTempFile(t, `[
             {"Name": "Cleo", "Wins": 10},
             {"Name": "Chris", "Wins": 33}]`)
+
+		defer closeFile()
 
 		store := FileSystemPlayerStore{database}
 
@@ -26,9 +30,11 @@ func TestFileSystemStore(t *testing.T) {
 	})
 
 	t.Run("Getting player score", func(t *testing.T) {
-		database := strings.NewReader(`[
+		database, closeFile := createTempFile(t, `[
             {"Name": "Cleo", "Wins": 10},
             {"Name": "Chris", "Wins": 33}]`)
+
+		defer closeFile()
 
 		store := FileSystemPlayerStore{database}
 
@@ -36,11 +42,69 @@ func TestFileSystemStore(t *testing.T) {
 
 		want := 33
 
-		if got != want {
-			t.Errorf("got %d but want %d", got, want)
-		}
+		assetPlayerscore(t, got, want)
 
 	})
+
+	t.Run("store existing player wins", func(t *testing.T) {
+		database, closeFile := createTempFile(t, `[
+            {"Name": "Cleo", "Wins": 10},
+            {"Name": "Chris", "Wins": 33}]`)
+
+		defer closeFile()
+
+		store := FileSystemPlayerStore{database}
+
+		store.RecordWins("Chris")
+
+		got := store.GetPlayerScore("Chris")
+
+		want := 34
+		assetPlayerscore(t, got, want)
+
+	})
+	t.Run("store new player ", func(t *testing.T) {
+		database, closeFile := createTempFile(t, `[
+            {"Name": "Cleo", "Wins": 10},
+            {"Name": "Chris", "Wins": 33}]`)
+
+		defer closeFile()
+
+		store := FileSystemPlayerStore{database}
+
+		store.RecordWins("Pepper")
+
+		got := store.GetPlayerScore("Pepper")
+
+		want := 1
+		assetPlayerscore(t, got, want)
+
+	})
+
+}
+func assetPlayerscore(t *testing.T, got, want int) {
+	if got != want {
+		t.Errorf("got %d but want %d", got, want)
+	}
+
+}
+
+func createTempFile(t testing.TB, initalData string) (io.ReadWriteSeeker, func()) {
+	t.Helper()
+	fs, err := ioutil.TempFile("", "db")
+	if err != nil {
+		t.Fatalf("could not create temp file %v", err)
+	}
+	fs.Write([]byte(initalData))
+
+	removefunc := func() {
+
+		fs.Close()
+		os.Remove(fs.Name())
+
+	}
+
+	return fs, removefunc
 
 }
 

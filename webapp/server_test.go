@@ -27,7 +27,7 @@ func (s *StubPlayerSore) RecordWins(name string) {
 
 }
 
-func (s *StubPlayerSore) GetLeague() []Player {
+func (s *StubPlayerSore) GetLeague() League {
 
 	return s.league
 
@@ -112,10 +112,15 @@ func TestStoreWins(t *testing.T) {
 
 }
 
+//integration Test
 func TestAndRecordWinAndScore(t *testing.T) {
 
-	store := NewInMemoryPlayerStore()
+	db, closeFile := createTempFile(t, "")
+	defer closeFile()
+	store := &FileSystemPlayerStore{db}
+
 	server := NewPlayerServer(store)
+
 	player := "Pepper"
 
 	server.ServeHTTP(httptest.NewRecorder(), NewPostWinRequest(player))

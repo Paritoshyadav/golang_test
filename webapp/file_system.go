@@ -6,10 +6,10 @@ import (
 )
 
 type FileSystemPlayerStore struct {
-	database io.ReadSeeker
+	database io.ReadWriteSeeker
 }
 
-func (fs *FileSystemPlayerStore) GetLeague() []Player {
+func (fs *FileSystemPlayerStore) GetLeague() League {
 	fs.database.Seek(0, 0)
 	league, _ := Newleague(fs.database)
 
@@ -19,17 +19,22 @@ func (fs *FileSystemPlayerStore) GetLeague() []Player {
 
 func (fs *FileSystemPlayerStore) GetPlayerScore(playerName string) int {
 	data := fs.GetLeague()
-	var wins int
-	for _, v := range data {
+	player := data.Find(playerName)
+	return player.Wins
 
-		if v.Name == playerName {
-			wins = v.Wins
-			break
+}
 
-		}
-
+func (fs *FileSystemPlayerStore) RecordWins(playerName string) {
+	data := fs.GetLeague()
+	player := data.Find(playerName)
+	if player != nil {
+		player.Wins++
+	} else {
+		data = append(data, Player{playerName, 1})
 	}
-	return wins
+
+	fs.database.Seek(0, 0)
+	json.NewEncoder(fs.database).Encode(data)
 
 }
 
